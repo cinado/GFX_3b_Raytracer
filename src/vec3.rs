@@ -15,7 +15,7 @@ impl Vec3 {
         }
     }
 
-    pub fn form_values(x: f32, y: f32, z: f32) -> Self {
+    pub fn from_values(x: f32, y: f32, z: f32) -> Self {
         Self { vector: [x, y, z] }
     }
 

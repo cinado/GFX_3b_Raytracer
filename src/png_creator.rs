@@ -7,8 +7,11 @@ pub(crate) fn create_png_at_path(
     png_data: &Vec<u8>,
     filename: &String,
 ) -> Result<(), std::io::Error> {
-    const IMAGE_WIDTH: u32 = 256;
-    const IMAGE_HEIGHT: u32 = 256;
+    const ASPECT_RATIO: f32 = 16.0 / 9.0;
+    const IMAGE_WIDTH: u32 = 400;
+
+    // Just temporarily, needs to be changed!
+    const IMAGE_HEIGHT: u32 = (IMAGE_WIDTH as f32 /ASPECT_RATIO) as u32;
 
     let output_directory = Path::new("output_files");
     let target_location = output_directory.join(filename);
