@@ -8,5 +8,5 @@ edition = "2021"
 [dependencies]
 indicatif = "0.17.4"
 png = "0.17.8"
-quick-xml = "0.28.2"
-serde = "1.0.163"
+quick-xml = { version = "0.28.2", features = ["serialize"] }
+serde = {version = "1.0.163", features = ["derive"] }

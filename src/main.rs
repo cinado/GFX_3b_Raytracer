@@ -1,5 +1,4 @@
-//mod file_loader;
-
+pub mod file_loader;
 mod camera;
 pub mod color_utility;
 pub mod png_creator;
@@ -8,6 +7,10 @@ mod vec3;
 mod sphere;
 pub mod hittable;
 mod hittable_list;
+pub mod deserialization_helpers;
+pub mod light;
+mod scene;
+pub mod material;
 
 use std::{f32::INFINITY, rc::Rc};
 
@@ -53,6 +56,9 @@ fn ray_color(ray: &Ray, hittable: &dyn Hittable) -> Color {
 }*/
 
 fn main() {
+    //let camera = file_loader::load_and_deserialize_test().expect("failure");
+    let scene = file_loader::load_and_deserialize_scene().expect("Failed to create scene!");
+
     const ASPECT_RATIO: f32 = 16.0 / 9.0;
     const IMAGE_WIDTH: u32 = 400;
 
@@ -69,9 +75,9 @@ fn main() {
             .expect("Failed to create progress style for progress bar"),
     );
 
-    let mut world = HittableList::new();
+    let mut world = HittableList::new();/*
     world.add(Rc::new(Sphere::from_values(&Point::from_values(0.0,0.0,-1.0), &0.5)));
-    world.add(Rc::new(Sphere::from_values(&Point::from_values(0.0,-100.5,-1.0), &100.0)));
+    world.add(Rc::new(Sphere::from_values(&Point::from_values(0.0,-100.5,-1.0), &100.0)));*/
 
     for j in (0..IMAGE_HEIGHT).rev() {
         for i in 0..IMAGE_WIDTH {
