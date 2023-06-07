@@ -6,6 +6,7 @@ use crate::{deserialization_helpers::deserialize_color, vec3::Color};
 
 pub trait Material {
     fn get_color(&self) -> Color;
+    fn get_phong(&self) -> Phong;
 }
 
 #[derive(Deserialize)]
@@ -39,6 +40,10 @@ impl Material for MaterialSolid {
     fn get_color(&self) -> Color {
         self.color.clone()
     }
+
+    fn get_phong(&self) -> Phong {
+        self.phong.clone()
+    }
 }
 
 #[derive(Deserialize)]
@@ -54,9 +59,13 @@ impl Material for MaterialTextured {
     fn get_color(&self) -> Color {
         Color::new()
     }
+
+    fn get_phong(&self) -> Phong {
+        self.phong.clone()
+    }
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Clone)]
 pub struct Phong {
     #[serde(rename = "@ka")]
     pub ka: f32,

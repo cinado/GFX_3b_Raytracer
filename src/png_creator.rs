@@ -19,7 +19,7 @@ pub(crate) fn create_png_at_path(png_data: &Vec<u8>, scene: &Scene) -> Result<()
     encoder.set_color(ColorType::Rgb);
     encoder.set_depth(BitDepth::Eight);
 
-    // Taken from the png rust doc - to assure the same colors
+    // Taken from the png rust doc - to ensure the same colors
     let source_chromaticities = png::SourceChromaticities::new(
         (0.31270, 0.32900),
         (0.64000, 0.33000),
