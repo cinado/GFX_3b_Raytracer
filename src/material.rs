@@ -2,71 +2,98 @@ use std::rc::Rc;
 
 use serde::{Deserialize, Deserializer};
 
-use crate::{vec3::Color, deserialization_helpers::deserialize_color};
+use crate::{deserialization_helpers::deserialize_color, vec3::Color};
 
-pub trait Material {}
+pub trait Material {
+    fn get_color(&self) -> Color;
+}
 
 #[derive(Deserialize)]
-struct MaterialSolid {
+pub struct MaterialSolid {
     #[serde(deserialize_with = "deserialize_color")]
-    color: Color,
-    phong: Phong,
-    reflectance: Reflectance,
-    transmittance: Transmittance,
-    refraction: Refraction,
+    pub color: Color,
+    pub phong: Phong,
+    pub reflectance: Reflectance,
+    pub transmittance: Transmittance,
+    pub refraction: Refraction,
 }
 
-impl Material for MaterialSolid {}
-
-#[derive(Deserialize)]
-struct MaterialTextured {
-    texture: Texture,
-    phong: Phong,
-    reflectance: Reflectance,
-    transmittance: Transmittance,
-    refraction: Refraction,
+impl MaterialSolid {
+    pub fn new() -> Self {
+        Self {
+            color: Color::from_values(1., 0.0, 0.0),
+            phong: Phong {
+                ka: 1.0,
+                kd: 1.0,
+                ks: 1.0,
+                exponent: 1.0,
+            },
+            reflectance: Reflectance { r: 20.0 },
+            transmittance: Transmittance { t: 15.0 },
+            refraction: Refraction { iof: 1.0 },
+        }
+    }
 }
 
-impl Material for MaterialTextured {}
+impl Material for MaterialSolid {
+    fn get_color(&self) -> Color {
+        self.color.clone()
+    }
+}
 
 #[derive(Deserialize)]
-struct Phong {
+pub struct MaterialTextured {
+    pub texture: Texture,
+    pub phong: Phong,
+    pub reflectance: Reflectance,
+    pub transmittance: Transmittance,
+    pub refraction: Refraction,
+}
+
+impl Material for MaterialTextured {
+    fn get_color(&self) -> Color {
+        Color::new()
+    }
+}
+
+#[derive(Deserialize)]
+pub struct Phong {
     #[serde(rename = "@ka")]
-    ka: f32,
+    pub ka: f32,
     #[serde(rename = "@kd")]
-    kd: f32,
+    pub kd: f32,
     #[serde(rename = "@ks")]
-    ks: f32,
+    pub ks: f32,
     #[serde(rename = "@exponent")]
-    exponent: f32,
+    pub exponent: f32,
 }
 
 #[derive(Deserialize)]
-struct Reflectance {
+pub struct Reflectance {
     #[serde(rename = "@r")]
-    r: f32,
+    pub r: f32,
 }
 
 #[derive(Deserialize)]
-struct Transmittance {
+pub struct Transmittance {
     #[serde(rename = "@t")]
-    t: f32,
+    pub t: f32,
 }
 
 #[derive(Deserialize)]
-struct Refraction {
+pub struct Refraction {
     #[serde(rename = "@iof")]
-    iof: f32,
+    pub iof: f32,
 }
 
 #[derive(Deserialize)]
-struct Texture {
+pub struct Texture {
     #[serde(rename = "@name")]
-    name: String,
+    pub name: String,
 }
 
 #[derive(Deserialize)]
-enum MaterialEnum {
+pub enum MaterialEnum {
     #[serde(rename = "material_solid")]
     Solid(MaterialSolid),
     #[serde(rename = "material_textured")]

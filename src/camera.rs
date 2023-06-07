@@ -1,7 +1,7 @@
 use serde::Deserialize;
 
 use crate::{
-    deserialization_helpers::{deserialize_vector, deserialize_point},
+    deserialization_helpers::{deserialize_point, deserialize_vector},
     ray::Ray,
     vec3::{Point, Vec3},
 };
@@ -30,18 +30,25 @@ impl Camera {
         resolution_vertical: usize,
         max_bounces: usize,
     ) -> Self {
+        let aspect_ratio = resolution_horizontal as f32 / resolution_vertical as f32;
+        let viewport_height = 2.0;
+        let viewport_width = viewport_height * aspect_ratio;
+        let focal_length: f32 = 1.0;
+
+        let horizontal = Vec3::from_values(viewport_width, 0.0, 0.0);
+        let vertical = Vec3::from_values(0.0, viewport_height, 0.0);
         Self {
-            position,
+            position: Point::from_values(position.x(), position.y(), position.z()),
             lookat,
             up,
             horizontal_fov,
             resolution_horizontal,
             resolution_vertical,
             max_bounces,
-            //Todo replace with real values
-            horizontal: Vec3::from_values(0.0, 0.0, 0.0),
-            vertical: Vec3::from_values(0.0, 0.0, 0.0),
-            lower_left_corner: Vec3::from_values(0.0, 0.0, 0.0),
+            horizontal,
+            vertical,
+            lower_left_corner: &(&(&position - &(&horizontal / &2.0)) - &(&vertical / &2.0))
+                - &Vec3::from_values(0.0, 0.0, focal_length),
         }
     }
 
@@ -66,23 +73,14 @@ impl Camera {
             //-------
             horizontal,
             vertical,
-            lower_left_corner: &(&(&(&position - &(&horizontal / &2.0)) - &(&horizontal / &2.0))
-                - &(&vertical / &2.0))
+            lower_left_corner: &(&(&position - &(&horizontal / &2.0)) - &(&vertical / &2.0))
                 - &Vec3::from_values(0.0, 0.0, focal_length),
         }
     }
 
-    pub fn construct_ray(&self, i: u32, j: u32) -> Ray {
-        // Testing purposes
-        //Todo replace with real camera values
-        const ASPECT_RATIO: f32 = 16.0 / 9.0;
-        const IMAGE_WIDTH: u32 = 400; //256;
-
-        // Just temporarily, needs to be changed!
-        const IMAGE_HEIGHT: u32 = (IMAGE_WIDTH as f32 / ASPECT_RATIO) as u32;
-
-        let u = (f64::from(i) / f64::from(IMAGE_WIDTH - 1)) as f32;
-        let v = (f64::from(j) / f64::from(IMAGE_HEIGHT - 1)) as f32;
+    pub fn construct_ray(&self, i: f64, j: f64) -> Ray {
+        let u = (i / f64::from(self.resolution_horizontal as u32 - 1)) as f32;
+        let v = (j / f64::from(self.resolution_vertical as u32 - 1)) as f32;
 
         Ray::from_values(
             &self.position,
