@@ -5,7 +5,7 @@ use std::path::Path;
 
 use crate::scene::Scene;
 
-pub(crate) fn create_png_at_path(png_data: &Vec<u8>, scene: &Scene) -> Result<(), std::io::Error> {
+pub(crate) fn create_png_at_path(png_data: &Vec<u8>, scene: &Scene) {
     let output_directory = Path::new("output_files");
     let target_location = output_directory.join(&scene.output_file);
     let file = File::create(target_location).expect("Failed to create file");
@@ -35,5 +35,4 @@ pub(crate) fn create_png_at_path(png_data: &Vec<u8>, scene: &Scene) -> Result<()
         .expect("Failed to write pixel data");
 
     writer.finish().expect("Failed to finish writing PNG");
-    Ok(())
 }

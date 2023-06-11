@@ -65,7 +65,7 @@ impl Light for AmbientLight {
         light_intesity
     }
 
-    fn check_if_in_shadow(&self, hit_record: &HitRecord, sufaces: &HittableList) -> bool {
+    fn check_if_in_shadow(&self, _hit_record: &HitRecord, _sufaces: &HittableList) -> bool {
         // Ambient light is not affected by shadows
         false
     }
@@ -199,6 +199,7 @@ impl Light for PointLight {
     }
 }
 
+#[allow(dead_code)]
 #[derive(Deserialize)]
 struct SpotLight {
     #[serde(deserialize_with = "deserialize_color")]
@@ -222,6 +223,7 @@ impl Light for SpotLight {
     }
 }
 
+#[allow(dead_code)]
 #[derive(Deserialize)]
 struct FallOff {
     #[serde(rename = "@alpha1")]

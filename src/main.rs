@@ -4,7 +4,7 @@ pub mod color_utility;
 pub mod png_creator;
 mod ray;
 mod vec3;
-mod sphere;
+mod surfaces;
 pub mod hittable;
 mod hittable_list;
 pub mod deserialization_helpers;
@@ -12,16 +12,13 @@ pub mod light;
 mod scene;
 pub mod material;
 
-use std::{f32::INFINITY, rc::Rc};
+use std::{f32::INFINITY};
 
-use camera::Camera;
 use hittable::{Hittable, HitRecord};
 use indicatif::{ProgressBar, ProgressStyle};
 use ray::Ray;
 use scene::Scene;
-use vec3::{Color, Point, Vec3};
-
-use crate::{hittable_list::HittableList, sphere::Sphere};
+use vec3::{Color};
 
 fn ray_color(ray: &Ray, scene: &Scene) -> Color {
     let mut hit_record = HitRecord::new();
@@ -33,7 +30,7 @@ fn ray_color(ray: &Ray, scene: &Scene) -> Color {
 }
 
 fn main() {
-    let scene = file_loader::load_and_deserialize_scene().expect("Failed to create scene!");
+    let scene = file_loader::load_and_deserialize_scene();
 
     let mut image_data = vec![];
 
@@ -53,5 +50,5 @@ fn main() {
         }
     }
 
-    png_creator::create_png_at_path(&image_data, &scene).err();
+    png_creator::create_png_at_path(&image_data, &scene);
 }

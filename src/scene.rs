@@ -1,4 +1,4 @@
-use crate::{deserialization_helpers, vec3::Color, camera::Camera, light::light::LightList, hittable_list::HittableList, sphere::deserialize_surfaces};
+use crate::{deserialization_helpers, vec3::Color, camera::Camera, light::light::LightList, hittable_list::HittableList, surfaces::deserialize_surfaces};
 
 use serde::Deserialize;
 use deserialization_helpers::deserialize_color;

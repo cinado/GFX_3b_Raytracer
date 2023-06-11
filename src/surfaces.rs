@@ -21,15 +21,6 @@ pub struct Sphere {
     pub material: Rc<dyn Material>,
 }
 
-/*impl Sphere {
-    pub fn from_values(point: &Point, radius: &f32) -> Self {
-        Self {
-            center: *point,
-            radius: *radius
-        }
-    }
-}*/
-
 #[derive(Deserialize)]
 pub struct Mesh {
     #[serde(rename = "@name")]
@@ -42,10 +33,10 @@ pub struct Mesh {
 impl Hittable for Mesh {
     fn hit(
         &self,
-        ray: &crate::ray::Ray,
-        t_min: f32,
-        t_max: f32,
-        hit_record: &mut HitRecord,
+        _ray: &crate::ray::Ray,
+        _t_min: f32,
+        _t_max: f32,
+        _hit_record: &mut HitRecord,
     ) -> bool {
         // TODO
         false
@@ -68,6 +59,7 @@ impl Hittable for Sphere {
         if discriminant < 0.0 {
             return false;
         }
+        
         let sqrt_discriminant = f32::sqrt(discriminant);
 
         let mut root = (-half_b - sqrt_discriminant) / a;
@@ -82,7 +74,6 @@ impl Hittable for Sphere {
         let outward_normal = (&(&hit_record.point - &self.position)) / &self.radius;
         hit_record.set_face_normal(&ray, &outward_normal);
 
-        //Test
         hit_record.material = self.material.clone();
 
         return true;

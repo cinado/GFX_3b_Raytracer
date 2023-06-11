@@ -24,7 +24,7 @@ impl HittableList {
 
     pub fn shadow_check(&self, ray: &Ray, t_min: f32, t_max: f32) -> bool {
         let mut temp_hit_record = HitRecord::new();
-        let mut closest_so_far = t_max;
+        let closest_so_far = t_max;
 
         for object in &self.objects {
             if object.hit(ray, t_min, closest_so_far, &mut temp_hit_record) {
