@@ -1,4 +1,4 @@
-use crate::vec3::Color;
+use super::vec3::Color;
 
 pub fn to_png_color(color: &Color, pixel_colors: &mut Vec<u8>) {
     let temp_values: [u8; 3] = [

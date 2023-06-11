@@ -191,8 +191,12 @@ impl Div<&f32> for &Vec3 {
     }
 }
 
-impl Display for Vec3{
+impl Display for Vec3 {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f,"({},{},{})", self.vector[0], self.vector[1], self.vector[2])
+        write!(
+            f,
+            "({},{},{})",
+            self.vector[0], self.vector[1], self.vector[2]
+        )
     }
 }

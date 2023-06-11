@@ -1,6 +1,6 @@
 use serde::Deserialize;
 
-use crate::vec3::{Vec3, Point, Color};
+use crate::utils::vec3::{Color, Point, Vec3};
 
 pub fn deserialize_color<'de, D>(deserializer: D) -> Result<Color, D::Error>
 where
@@ -13,7 +13,7 @@ where
         #[serde(rename = "@g")]
         pub g: f32,
         #[serde(rename = "@b")]
-        pub b: f32
+        pub b: f32,
     }
 
     let color = ColorDeserialized::deserialize(deserializer)?;
@@ -31,7 +31,7 @@ where
         #[serde(rename = "@y")]
         pub y: f32,
         #[serde(rename = "@z")]
-        pub z: f32
+        pub z: f32,
     }
 
     let point = PointDeserialized::deserialize(deserializer)?;
@@ -49,7 +49,7 @@ where
         #[serde(rename = "@y")]
         pub y: f32,
         #[serde(rename = "@z")]
-        pub z: f32
+        pub z: f32,
     }
 
     let vector = VectorDeserialized::deserialize(deserializer)?;

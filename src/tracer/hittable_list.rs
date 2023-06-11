@@ -1,6 +1,6 @@
 use std::rc::Rc;
 
-use crate::{
+use super::{
     hittable::{HitRecord, Hittable},
     ray::Ray,
 };
@@ -10,10 +10,6 @@ pub struct HittableList {
 }
 
 impl HittableList {
-    pub fn clear(&mut self) {
-        self.objects.clear();
-    }
-
     pub fn new() -> Self {
         Self { objects: vec![] }
     }

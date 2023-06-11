@@ -1,9 +1,11 @@
 use serde::Deserialize;
 
 use crate::{
-    deserialization_helpers::{deserialize_point, deserialize_vector},
-    ray::Ray,
-    vec3::{Point, Vec3},
+    tracer::ray::Ray,
+    utils::{
+        deserialization_helpers::{deserialize_point, deserialize_vector},
+        vec3::{Point, Vec3},
+    },
 };
 
 pub struct Camera {
@@ -51,7 +53,7 @@ impl Camera {
                 - &Vec3::from_values(0.0, 0.0, focal_length),
         }
     }
-
+    /*
     pub fn basic_camera(aspect_ratio: f32) -> Self {
         let viewport_height = 2.0;
         let viewport_width = viewport_height * aspect_ratio;
@@ -76,7 +78,7 @@ impl Camera {
             lower_left_corner: &(&(&position - &(&horizontal / &2.0)) - &(&vertical / &2.0))
                 - &Vec3::from_values(0.0, 0.0, focal_length),
         }
-    }
+    }*/
 
     pub fn construct_ray(&self, i: f64, j: f64) -> Ray {
         let u = (i / f64::from(self.resolution_horizontal as u32 - 1)) as f32;

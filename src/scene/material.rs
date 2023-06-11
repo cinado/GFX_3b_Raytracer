@@ -2,7 +2,7 @@ use std::rc::Rc;
 
 use serde::{Deserialize, Deserializer};
 
-use crate::{deserialization_helpers::deserialize_color, vec3::Color};
+use crate::utils::{deserialization_helpers::deserialize_color, vec3::Color};
 
 pub trait Material {
     fn get_color(&self) -> Color;

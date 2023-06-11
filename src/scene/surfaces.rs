@@ -3,12 +3,18 @@ use std::rc::Rc;
 use serde::{Deserialize, Deserializer};
 
 use crate::{
-    deserialization_helpers::deserialize_point,
-    hittable::{HitRecord, Hittable},
-    hittable_list::HittableList,
-    material::{deserialize_material, Material},
-    vec3::{Point, Vec3},
+    tracer::{
+        hittable::{HitRecord, Hittable},
+        hittable_list::HittableList,
+        ray::Ray,
+    },
+    utils::{
+        deserialization_helpers::deserialize_point,
+        vec3::{Point, Vec3},
+    },
 };
+
+use super::material::{deserialize_material, Material};
 
 #[derive(Deserialize)]
 pub struct Sphere {
@@ -31,26 +37,14 @@ pub struct Mesh {
 }
 
 impl Hittable for Mesh {
-    fn hit(
-        &self,
-        _ray: &crate::ray::Ray,
-        _t_min: f32,
-        _t_max: f32,
-        _hit_record: &mut HitRecord,
-    ) -> bool {
+    fn hit(&self, _ray: &Ray, _t_min: f32, _t_max: f32, _hit_record: &mut HitRecord) -> bool {
         // TODO
         false
     }
 }
 
 impl Hittable for Sphere {
-    fn hit(
-        &self,
-        ray: &crate::ray::Ray,
-        t_min: f32,
-        t_max: f32,
-        hit_record: &mut HitRecord,
-    ) -> bool {
+    fn hit(&self, ray: &Ray, t_min: f32, t_max: f32, hit_record: &mut HitRecord) -> bool {
         let oc = &ray.origin - &self.position;
         let a = ray.direction.length_squared();
         let half_b = Vec3::dot(&oc, &ray.direction);
@@ -59,7 +53,7 @@ impl Hittable for Sphere {
         if discriminant < 0.0 {
             return false;
         }
-        
+
         let sqrt_discriminant = f32::sqrt(discriminant);
 
         let mut root = (-half_b - sqrt_discriminant) / a;
@@ -98,7 +92,7 @@ where
         surfaces: Vec<Surface>,
     }
 
-    let inner_surfaces:InnerSurfaces  = InnerSurfaces::deserialize(deserializer)?;
+    let inner_surfaces: InnerSurfaces = InnerSurfaces::deserialize(deserializer)?;
 
     let surfaces: Vec<Surface> = inner_surfaces.surfaces;
     let mut hittable_list = HittableList::new();

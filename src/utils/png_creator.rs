@@ -3,7 +3,7 @@ use std::fs::File;
 use std::io::BufWriter;
 use std::path::Path;
 
-use crate::scene::Scene;
+use crate::scene::scene::Scene;
 
 pub(crate) fn create_png_at_path(png_data: &Vec<u8>, scene: &Scene) {
     let output_directory = Path::new("output_files");

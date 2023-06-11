@@ -1,24 +1,13 @@
-pub mod file_loader;
-mod camera;
-pub mod color_utility;
-pub mod png_creator;
-mod ray;
-mod vec3;
-mod surfaces;
-pub mod hittable;
-mod hittable_list;
-pub mod deserialization_helpers;
-pub mod light;
 mod scene;
-pub mod material;
+mod tracer;
+mod utils;
 
 use std::{f32::INFINITY};
 
-use hittable::{Hittable, HitRecord};
 use indicatif::{ProgressBar, ProgressStyle};
-use ray::Ray;
-use scene::Scene;
-use vec3::{Color};
+use scene::scene::Scene;
+use tracer::{ray::Ray, hittable::{HitRecord, Hittable}};
+use utils::{vec3::Color, file_loader, color_utility, png_creator};
 
 fn ray_color(ray: &Ray, scene: &Scene) -> Color {
     let mut hit_record = HitRecord::new();

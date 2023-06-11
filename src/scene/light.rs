@@ -3,13 +3,14 @@ use std::ops::{AddAssign, MulAssign};
 use serde::Deserialize;
 
 use crate::{
-    deserialization_helpers::{deserialize_color, deserialize_point, deserialize_vector},
-    hittable::HitRecord,
-    hittable_list::HittableList,
-    material::Phong,
-    ray::Ray,
-    vec3::{Color, Point, Vec3},
+    tracer::{hittable::HitRecord, hittable_list::HittableList, ray::Ray},
+    utils::{
+        deserialization_helpers::{deserialize_color, deserialize_point, deserialize_vector},
+        vec3::{Color, Point, Vec3},
+    },
 };
+
+use super::material::Phong;
 
 pub struct LightList {
     pub light_list: Vec<Box<dyn Light>>,

@@ -1,10 +1,15 @@
-use crate::{deserialization_helpers, vec3::Color, camera::Camera, light::light::LightList, hittable_list::HittableList, surfaces::deserialize_surfaces};
-
-use serde::Deserialize;
 use deserialization_helpers::deserialize_color;
+use serde::Deserialize;
+
+use crate::{
+    tracer::hittable_list::HittableList,
+    utils::{deserialization_helpers, vec3::Color},
+};
+
+use super::{camera::Camera, light::LightList, surfaces::deserialize_surfaces};
 
 #[derive(Deserialize)]
-pub struct Scene{
+pub struct Scene {
     #[serde(rename = "@output_file")]
     pub output_file: String,
     #[serde(deserialize_with = "deserialize_color")]

@@ -1,9 +1,11 @@
 use std::rc::Rc;
 
 use crate::{
-    ray::Ray,
-    vec3::{Point, Vec3}, material::Material,
+    scene::material::{Material, MaterialSolid},
+    utils::vec3::{Point, Vec3},
 };
+
+use super::ray::Ray;
 
 #[derive(Clone)]
 pub struct HitRecord {
@@ -11,7 +13,7 @@ pub struct HitRecord {
     pub normal: Vec3,
     pub t: f32,
     pub front_face: bool,
-    pub material: Rc<dyn Material>
+    pub material: Rc<dyn Material>,
 }
 
 impl HitRecord {
@@ -25,11 +27,11 @@ impl HitRecord {
     }
     pub fn new() -> Self {
         Self {
-            point: Point::from_values(0.0,0.0,0.0),
-            normal: Vec3::from_values(0.0,0.0,0.0),
+            point: Point::from_values(0.0, 0.0, 0.0),
+            normal: Vec3::from_values(0.0, 0.0, 0.0),
             t: 0.0,
             front_face: true,
-            material: Rc::new(crate::material::MaterialSolid::new())
+            material: Rc::new(MaterialSolid::new()),
         }
     }
 }
