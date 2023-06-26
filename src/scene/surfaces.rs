@@ -10,6 +10,8 @@ use crate::{
     },
     utils::{
         deserialization_helpers::deserialize_point,
+        file_loader,
+        obj_parser::OBJParser,
         vec3::{Point, Vec3},
     },
 };
@@ -34,11 +36,68 @@ pub struct Mesh {
     #[serde(rename = "$value")]
     #[serde(deserialize_with = "deserialize_material")]
     pub material: Rc<dyn Material>,
+    #[serde(skip_deserializing)]
+    pub obj_parser: OBJParser,
 }
 
 impl Hittable for Mesh {
-    fn hit(&self, _ray: &Ray, _t_min: f32, _t_max: f32, _hit_record: &mut HitRecord) -> bool {
-        // TODO
+    fn hit(&self, ray: &Ray, t_min: f32, t_max: f32, hit_record: &mut HitRecord) -> bool {
+        const CORRECTION: f32 = 0.00001;
+
+        for chunk in self.obj_parser.new_index_array.chunks_exact(3) {
+            let vertex_a = self.obj_parser.sorted_vertices[chunk[0]];
+            let vertex_b = self.obj_parser.sorted_vertices[chunk[1]];
+            let vertex_c = self.obj_parser.sorted_vertices[chunk[2]];
+
+            let normal_a = self.obj_parser.sorted_normals[chunk[0]];
+            let normal_b = self.obj_parser.sorted_normals[chunk[1]];
+            let normal_c = self.obj_parser.sorted_normals[chunk[2]];
+
+            let edge_ab = &vertex_b - &vertex_a;
+            let edge_ac = &vertex_c - &vertex_a;
+
+            let p_vec = ray.direction.cross(&edge_ab);
+            let determinant = edge_ac.dot(&p_vec);
+
+            // If dot product of ray direction and triangle normal is 0 then the ray and the triangle are parallel
+            // and there's no intersection
+            if determinant > -CORRECTION && determinant < CORRECTION {
+                continue;
+            }
+
+            // Check barycentric coordinates
+
+            let inverse_determinant = 1.0 / determinant;
+            let t_vec = &ray.origin - &vertex_a;
+            let u = inverse_determinant * t_vec.dot(&p_vec);
+
+            if u < 0.0 || u > 1.0 {
+                continue;
+            }
+
+            let q_vec = t_vec.cross(&edge_ac);
+            let v = inverse_determinant * ray.direction.dot(&q_vec);
+
+            if v < 0.0 || u + v > 1.0 {
+                continue;
+            }
+
+            let  t = inverse_determinant * edge_ab.dot(&q_vec);
+            
+            if t < t_min || t > t_max {
+                continue;
+            }
+
+            hit_record.t = t;
+            hit_record.point = ray.at(hit_record.t);
+            hit_record.material = self.material.clone();
+
+            let outward_normal = &(&(&u * &normal_c) + &(&v * &normal_b)) + &(&(1.0 - u - v) * &normal_a);
+            hit_record.set_face_normal(&ray, &outward_normal);
+
+            return true;
+        }
+
         false
     }
 }
@@ -100,7 +159,12 @@ where
     for surface in surfaces {
         let hittable: Rc<dyn Hittable> = match surface {
             Surface::Sphere(sphere) => Rc::new(sphere) as Rc<dyn Hittable>,
-            Surface::Mesh(mesh) => Rc::new(mesh) as Rc<dyn Hittable>,
+            Surface::Mesh(mut mesh) => {
+                mesh.obj_parser.extract_data(
+                    &file_loader::load_obj_file(&mesh.name).expect("Reading of OBJ-File failed!"),
+                );
+                Rc::new(mesh) as Rc<dyn Hittable>
+            }
         };
         hittable_list.add(hittable);
     }

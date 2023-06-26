@@ -90,7 +90,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "lab3a"
+name = "lab3b"
 version = "0.1.0"
 dependencies = [
  "indicatif",

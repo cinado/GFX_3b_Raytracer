@@ -188,14 +188,16 @@ impl Light for PointLight {
     }
 
     fn check_if_in_shadow(&self, hit_record: &HitRecord, surfaces: &HittableList) -> bool {
-        let light_vector = (&self.position - &hit_record.point).unit_vector();
+        let mut light_vector = &self.position - &hit_record.point;
+        let light_vector_length = light_vector.length();
+        light_vector = light_vector.unit_vector();
         surfaces.shadow_check(
             &Ray {
                 origin: hit_record.point,
                 direction: light_vector,
             },
             0.00001, // offset prevent intersection with object itself
-            f32::INFINITY,
+            light_vector_length
         )
     }
 }
