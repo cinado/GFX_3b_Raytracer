@@ -7,6 +7,8 @@ use crate::utils::{deserialization_helpers::deserialize_color, vec3::Color};
 pub trait Material {
     fn get_color(&self) -> Color;
     fn get_phong(&self) -> Phong;
+    fn get_reflectance(&self) -> Reflectance;
+    fn get_transmittance(&self) -> Transmittance;
 }
 
 #[derive(Deserialize)]
@@ -44,6 +46,14 @@ impl Material for MaterialSolid {
     fn get_phong(&self) -> Phong {
         self.phong.clone()
     }
+
+    fn get_reflectance(&self) -> Reflectance {
+        self.reflectance.clone()
+    }
+
+    fn get_transmittance(&self) -> Transmittance {
+        self.transmittance.clone()
+    }
 }
 
 #[derive(Deserialize)]
@@ -63,6 +73,14 @@ impl Material for MaterialTextured {
     fn get_phong(&self) -> Phong {
         self.phong.clone()
     }
+
+    fn get_reflectance(&self) -> Reflectance {
+        self.reflectance.clone()
+    }
+
+    fn get_transmittance(&self) -> Transmittance {
+        self.transmittance.clone()
+    }
 }
 
 #[derive(Deserialize, Clone)]
@@ -77,13 +95,13 @@ pub struct Phong {
     pub exponent: f32,
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Clone)]
 pub struct Reflectance {
     #[serde(rename = "@r")]
     pub r: f32,
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Clone)]
 pub struct Transmittance {
     #[serde(rename = "@t")]
     pub t: f32,
