@@ -1,4 +1,6 @@
-use std::ops::{AddAssign, MulAssign};
+use std::{
+    ops::{AddAssign, MulAssign},
+};
 
 use serde::Deserialize;
 
@@ -10,7 +12,7 @@ use crate::{
     },
 };
 
-use super::material::Phong;
+use super::material::{Phong, Texture};
 
 pub struct LightList {
     pub light_list: Vec<Box<dyn Light>>,
@@ -48,6 +50,15 @@ impl MulAssign<&Phong> for LightIntensity {
     }
 }
 
+fn get_color_from_textures(texture_information: &Texture, texture_coordinate: &Vec3) -> Color {
+    let x_converted = (f32::floor(texture_coordinate.x() * texture_information.width) as isize)
+        .rem_euclid(texture_information.width as isize) as usize;
+    let y_converted = (f32::floor(texture_coordinate.y() * texture_information.height) as isize)
+        .rem_euclid(texture_information.height as isize) as usize;
+
+    texture_information.texture_pixels[(texture_information.width as usize * y_converted) + x_converted]
+}
+
 pub trait Light {
     fn calculate_light_intensities(&self, ray: &Ray, hit_record: &HitRecord) -> LightIntensity;
     fn check_if_in_shadow(&self, hit_record: &HitRecord, surfaces: &HittableList) -> bool;
@@ -62,7 +73,14 @@ pub struct AmbientLight {
 impl Light for AmbientLight {
     fn calculate_light_intensities(&self, _ray: &Ray, hit_record: &HitRecord) -> LightIntensity {
         let mut light_intesity = LightIntensity::new();
-        light_intesity.ambient = &hit_record.material.get_color() * &self.color;
+
+        let color = if hit_record.texture_coordinate.is_some() {
+            get_color_from_textures(&hit_record.material.get_texture_information().unwrap(), &hit_record.texture_coordinate.unwrap())
+        } else{
+            hit_record.material.get_color()
+        };
+
+        light_intesity.ambient = &color * &self.color;
         light_intesity
     }
 
@@ -115,10 +133,16 @@ impl Light for ParallelLight {
     fn calculate_light_intensities(&self, ray: &Ray, hit_record: &HitRecord) -> LightIntensity {
         let mut light_intensity = LightIntensity::new();
 
+        let color = if hit_record.texture_coordinate.is_some() {
+            get_color_from_textures(&hit_record.material.get_texture_information().unwrap(), &hit_record.texture_coordinate.unwrap())
+        } else{
+            hit_record.material.get_color()
+        };
+
         // Calculate Diffuse
         let light_vector = (-&self.direction).unit_vector();
         let intensity = hit_record.normal.dot(&light_vector).max(0.0);
-        let diffuse_intensity = &(&hit_record.material.get_color() * &self.color) * &intensity;
+        let diffuse_intensity = &(&color * &self.color) * &intensity;
 
         // Calculate Specular
         //r = 2(n ⋅ l)n – l
@@ -164,10 +188,16 @@ impl Light for PointLight {
     fn calculate_light_intensities(&self, ray: &Ray, hit_record: &HitRecord) -> LightIntensity {
         let mut light_intensity = LightIntensity::new();
 
+        let color = if hit_record.texture_coordinate.is_some() {
+            get_color_from_textures(&hit_record.material.get_texture_information().unwrap(), &hit_record.texture_coordinate.unwrap())
+        } else{
+            hit_record.material.get_color()
+        };
+
         // Calculate Diffuse
         let light_vector = (&self.position - &hit_record.point).unit_vector();
         let intensity = hit_record.normal.dot(&light_vector).max(0.0);
-        let diffuse_intensity = &(&hit_record.material.get_color() * &self.color) * &intensity;
+        let diffuse_intensity = &(&color * &self.color) * &intensity;
 
         // Calculate Specular
         //r = 2(n ⋅ l)n – l
@@ -197,7 +227,7 @@ impl Light for PointLight {
                 direction: light_vector,
             },
             0.00001, // offset prevent intersection with object itself
-            light_vector_length
+            light_vector_length,
         )
     }
 }

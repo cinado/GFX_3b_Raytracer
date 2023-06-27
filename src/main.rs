@@ -10,12 +10,16 @@ use tracer::{
     hittable::{HitRecord, Hittable},
     ray::Ray,
 };
-use utils::{color_utility, file_loader, png_creator, vec3::{Color, Vec3}};
+use utils::{
+    color_utility, file_loader, png_creator,
+    vec3::{Color, Vec3},
+};
 
 fn ray_color(ray: &Ray, scene: &Scene, current_bounce_number: usize) -> Color {
     let mut hit_record = HitRecord::new();
     let mut color = Color::new();
     let mut reflected_color = Color::new();
+    let mut refracted_color = Color::new();
 
     if scene.surfaces.hit(ray, 0.0, INFINITY, &mut hit_record) {
         color = scene
@@ -39,11 +43,24 @@ fn ray_color(ray: &Ray, scene: &Scene, current_bounce_number: usize) -> Color {
                 * &ray_color(&reflected_ray, scene, current_bounce_number + 1);
         }
 
-        if(hit_record.material.get_transmittance().t > 0.00001){
-            
+        if hit_record.material.get_transmittance().t > 0.00001 {
+            let bias = 0.001; // Small bias value to mitigate surface acne
+            let refracted_direction = refract(&ray.direction, &hit_record.normal, &hit_record);
+            let refracted_origin = &hit_record.point + &(&bias * &refracted_direction); // Apply bias to the origin
+            let refracted_ray = Ray {
+                origin: refracted_origin,
+                direction: refracted_direction,
+            };
+
+            refracted_color = &hit_record.material.get_transmittance().t
+                * &ray_color(&refracted_ray, scene, current_bounce_number + 1);
         }
 
-        return &(&color * &(1.0 - hit_record.material.get_reflectance().r)) + &reflected_color;
+        return &(&color
+            * &(1.0
+                - hit_record.material.get_reflectance().r
+                - hit_record.material.get_transmittance().t))
+            + &(&reflected_color + &refracted_color);
     }
 
     scene.background_color
@@ -51,6 +68,33 @@ fn ray_color(ray: &Ray, scene: &Scene, current_bounce_number: usize) -> Color {
 
 fn reflect(incident: &Vec3, normal: &Vec3) -> Vec3 {
     incident - &(&(2.0 * incident.dot(normal)) * normal)
+}
+
+fn refract(incident: &Vec3, normal: &Vec3, hit_record: &HitRecord) -> Vec3 {
+    let incident_normalized = incident.unit_vector();
+    let mut normal_normalized = normal.unit_vector();
+
+    let mut cosine = incident_normalized.dot(&normal_normalized);
+    cosine = cosine.clamp(-1.0, 1.0);
+
+    let eta = if cosine < 0.0 {
+        cosine = -cosine;
+        1.0 / hit_record.material.get_refraction().iof
+    } else {
+        normal_normalized = -&normal_normalized; 
+        hit_record.material.get_refraction().iof
+    };
+
+    let pre_sqrt_check = 1.0 - eta.powi(2) * (1.0 - cosine.powi(2));
+
+    if pre_sqrt_check < 0.0 {
+        return Vec3::new();
+    }
+
+    /*(&(&eta * &(&incident_normalized + &(&normal_normalized * &cosine)))
+        - &(&normal_normalized * &f32::sqrt(pre_sqrt_check))).unit_vector()*/
+
+    &(&eta * &incident_normalized) + &(&(eta * cosine - f32::sqrt(pre_sqrt_check)) * &normal_normalized)
 }
 
 fn main() {

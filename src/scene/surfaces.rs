@@ -53,6 +53,10 @@ impl Hittable for Mesh {
             let normal_b = self.obj_parser.sorted_normals[chunk[1]];
             let normal_c = self.obj_parser.sorted_normals[chunk[2]];
 
+            let texture_vertex_1 = self.obj_parser.texture_vertices_to_be_returned[chunk[0]];
+            let texture_vertex_2 = self.obj_parser.texture_vertices_to_be_returned[chunk[1]];
+            let texture_vertex_3 = self.obj_parser.texture_vertices_to_be_returned[chunk[2]];
+
             let edge_ab = &vertex_b - &vertex_a;
             let edge_ac = &vertex_c - &vertex_a;
 
@@ -93,7 +97,10 @@ impl Hittable for Mesh {
             hit_record.material = self.material.clone();
 
             let outward_normal = &(&(&u * &normal_c) + &(&v * &normal_b)) + &(&(1.0 - u - v) * &normal_a);
+            let texture_coordinate = &(&(&u * &texture_vertex_3) + &(&v * &texture_vertex_2)) + &(&(1.0 - u - v) * &texture_vertex_1);
+
             hit_record.set_face_normal(&ray, &outward_normal);
+            hit_record.set_texture_coordinate(&texture_coordinate);
 
             return true;
         }

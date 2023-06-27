@@ -14,17 +14,23 @@ pub struct HitRecord {
     pub t: f32,
     pub front_face: bool,
     pub material: Rc<dyn Material>,
+    pub texture_coordinate: Option<Vec3>,
 }
 
 impl HitRecord {
     pub fn set_face_normal(&mut self, ray: &Ray, outward_normal: &Vec3) {
         self.front_face = Vec3::dot(&ray.direction, &outward_normal) < 0.0;
-        self.normal = if self.front_face {
-            outward_normal.clone()
-        } else {
-            -outward_normal
-        }
+        self.normal = outward_normal.clone(); /*if self.front_face {
+                                                  outward_normal.clone()
+                                              } else {
+                                                  -outward_normal
+                                              }*/
     }
+
+    pub fn set_texture_coordinate(&mut self, texture_coordinate: &Vec3) {
+        self.texture_coordinate = Some(texture_coordinate.clone());
+    }
+
     pub fn new() -> Self {
         Self {
             point: Point::from_values(0.0, 0.0, 0.0),
@@ -32,6 +38,7 @@ impl HitRecord {
             t: 0.0,
             front_face: true,
             material: Rc::new(MaterialSolid::new()),
+            texture_coordinate: None,
         }
     }
 }

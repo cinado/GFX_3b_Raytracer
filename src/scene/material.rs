@@ -2,13 +2,15 @@ use std::rc::Rc;
 
 use serde::{Deserialize, Deserializer};
 
-use crate::utils::{deserialization_helpers::deserialize_color, vec3::Color};
+use crate::utils::{deserialization_helpers::deserialize_color, vec3::Color, file_loader::{load_texture_file}};
 
 pub trait Material {
     fn get_color(&self) -> Color;
     fn get_phong(&self) -> Phong;
     fn get_reflectance(&self) -> Reflectance;
     fn get_transmittance(&self) -> Transmittance;
+    fn get_refraction(&self) -> Refraction;
+    fn get_texture_information(&self) -> Option<&Texture>;
 }
 
 #[derive(Deserialize)]
@@ -54,6 +56,14 @@ impl Material for MaterialSolid {
     fn get_transmittance(&self) -> Transmittance {
         self.transmittance.clone()
     }
+
+    fn get_refraction(&self) -> Refraction {
+        self.refraction.clone()
+    }
+
+    fn get_texture_information(&self) -> Option<&Texture> {
+        None
+    }
 }
 
 #[derive(Deserialize)]
@@ -81,6 +91,14 @@ impl Material for MaterialTextured {
     fn get_transmittance(&self) -> Transmittance {
         self.transmittance.clone()
     }
+
+    fn get_refraction(&self) -> Refraction {
+        self.refraction.clone()
+    }
+
+    fn get_texture_information(&self) -> Option<&Texture> {
+        Some(&self.texture)
+    }
 }
 
 #[derive(Deserialize, Clone)]
@@ -107,16 +125,22 @@ pub struct Transmittance {
     pub t: f32,
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Clone)]
 pub struct Refraction {
     #[serde(rename = "@iof")]
     pub iof: f32,
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Clone)]
 pub struct Texture {
     #[serde(rename = "@name")]
     pub name: String,
+    #[serde(skip_deserializing)]
+    pub width: f32,
+    #[serde(skip_deserializing)]
+    pub height: f32,
+    #[serde(skip_deserializing)]
+    pub texture_pixels: Vec<Color>,
 }
 
 #[derive(Deserialize)]
@@ -134,7 +158,8 @@ where
     let material: MaterialEnum = Deserialize::deserialize(deserializer)?;
     match material {
         MaterialEnum::Solid(material_solid) => Ok(Rc::new(material_solid) as Rc<dyn Material>),
-        MaterialEnum::Textured(material_textured) => {
+        MaterialEnum::Textured(mut material_textured) => {
+            material_textured.texture = load_texture_file(&material_textured.texture.name);
             Ok(Rc::new(material_textured) as Rc<dyn Material>)
         }
     }
