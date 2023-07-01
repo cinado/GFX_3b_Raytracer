@@ -1,5 +1,5 @@
 use std::fmt::Display;
-use std::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Neg, Sub};
+use std::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Neg, Sub, Index};
 
 #[derive(Debug, Clone, Copy)]
 pub struct Vec3 {
@@ -188,6 +188,14 @@ impl Div<&f32> for &Vec3 {
                 self.vector[2] / rhs,
             ],
         }
+    }
+}
+
+impl Index<usize> for Vec3 {
+    type Output = f32;
+
+    fn index(&self, index: usize) -> &Self::Output {
+        &self.vector[index]
     }
 }
 

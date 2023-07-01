@@ -4,3 +4,4 @@ pub mod file_loader;
 pub mod png_creator;
 pub mod vec3;
 pub mod obj_parser;
+pub mod mat4;

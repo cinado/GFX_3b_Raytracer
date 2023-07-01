@@ -4,6 +4,7 @@ use crate::{
     tracer::ray::Ray,
     utils::{
         deserialization_helpers::{deserialize_point, deserialize_vector},
+        mat4::Mat4,
         vec3::{Point, Vec3},
     },
 };
@@ -20,6 +21,7 @@ pub struct Camera {
     pub horizontal: Vec3,
     pub vertical: Vec3,
     pub lower_left_corner: Point,
+    pub transformation_matrix: Mat4,
 }
 
 impl Camera {
@@ -31,6 +33,7 @@ impl Camera {
         resolution_horizontal: usize,
         resolution_vertical: usize,
         max_bounces: usize,
+        transformation_matrix: Mat4,
     ) -> Self {
         let aspect_ratio = resolution_horizontal as f32 / resolution_vertical as f32;
         let viewport_height = 2.0;
@@ -51,6 +54,7 @@ impl Camera {
             vertical,
             lower_left_corner: &(&(&position - &(&horizontal / &2.0)) - &(&vertical / &2.0))
                 - &Vec3::from_values(0.0, 0.0, focal_length),
+            transformation_matrix,
         }
     }
     /*
@@ -84,10 +88,14 @@ impl Camera {
         let u = (i / f64::from(self.resolution_horizontal as u32 - 1)) as f32;
         let v = (j / f64::from(self.resolution_vertical as u32 - 1)) as f32;
 
+        let computed_direction = &(&self.lower_left_corner
+            + &(&(&u * &self.horizontal) + &(&(&v * &self.vertical) - &self.position)));
+
         Ray::from_values(
             &self.position,
-            &(&self.lower_left_corner
-                + &(&(&u * &self.horizontal) + &(&(&v * &self.vertical) - &self.position))),
+            &self
+                .transformation_matrix
+                .transform_vec3(&computed_direction),
         )
     }
 }
@@ -140,6 +148,11 @@ impl<'de> Deserialize<'de> for Camera {
             deserialized_camera.resolution.resolution_horizontal,
             deserialized_camera.resolution.resolution_vertical,
             deserialized_camera.max_bounces.n,
+            Mat4::construct_camera_transformation_matrix(
+                &deserialized_camera.up,
+                &deserialized_camera.lookat,
+                &deserialized_camera.position,
+            ),
         ))
     }
 }

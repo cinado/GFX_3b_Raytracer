@@ -88,7 +88,7 @@ fn refract(incident: &Vec3, normal: &Vec3, hit_record: &HitRecord) -> Vec3 {
     let pre_sqrt_check = 1.0 - eta.powi(2) * (1.0 - cosine.powi(2));
 
     if pre_sqrt_check < 0.0 {
-        return Vec3::new();
+        return reflect(&incident, &normal)
     }
 
     /*(&(&eta * &(&incident_normalized + &(&normal_normalized * &cosine)))

@@ -86,8 +86,8 @@ impl Hittable for Mesh {
                 continue;
             }
 
-            let  t = inverse_determinant * edge_ab.dot(&q_vec);
-            
+            let t = inverse_determinant * edge_ab.dot(&q_vec);
+
             if t < t_min || t > t_max {
                 continue;
             }
@@ -96,8 +96,10 @@ impl Hittable for Mesh {
             hit_record.point = ray.at(hit_record.t);
             hit_record.material = self.material.clone();
 
-            let outward_normal = &(&(&u * &normal_c) + &(&v * &normal_b)) + &(&(1.0 - u - v) * &normal_a);
-            let texture_coordinate = &(&(&u * &texture_vertex_3) + &(&v * &texture_vertex_2)) + &(&(1.0 - u - v) * &texture_vertex_1);
+            let outward_normal =
+                &(&(&u * &normal_c) + &(&v * &normal_b)) + &(&(1.0 - u - v) * &normal_a);
+            let texture_coordinate = &(&(&u * &texture_vertex_3) + &(&v * &texture_vertex_2))
+                + &(&(1.0 - u - v) * &texture_vertex_1);
 
             hit_record.set_face_normal(&ray, &outward_normal);
             hit_record.set_texture_coordinate(&texture_coordinate);
@@ -135,6 +137,12 @@ impl Hittable for Sphere {
         hit_record.set_face_normal(&ray, &outward_normal);
 
         hit_record.material = self.material.clone();
+
+        let u =
+            0.5 + f32::atan2(outward_normal.x(), outward_normal.z()) / (2.0 * std::f32::consts::PI);
+        let v = 0.5 - f32::asin(outward_normal.y()) / std::f32::consts::PI;
+
+        hit_record.set_texture_coordinate(&Vec3::from_values(u, v, 1.0));
 
         return true;
     }

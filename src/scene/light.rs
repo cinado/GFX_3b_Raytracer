@@ -74,7 +74,7 @@ impl Light for AmbientLight {
     fn calculate_light_intensities(&self, _ray: &Ray, hit_record: &HitRecord) -> LightIntensity {
         let mut light_intesity = LightIntensity::new();
 
-        let color = if hit_record.texture_coordinate.is_some() {
+        let color = if hit_record.material.get_texture_information().is_some() {
             get_color_from_textures(&hit_record.material.get_texture_information().unwrap(), &hit_record.texture_coordinate.unwrap())
         } else{
             hit_record.material.get_color()
@@ -133,7 +133,7 @@ impl Light for ParallelLight {
     fn calculate_light_intensities(&self, ray: &Ray, hit_record: &HitRecord) -> LightIntensity {
         let mut light_intensity = LightIntensity::new();
 
-        let color = if hit_record.texture_coordinate.is_some() {
+        let color = if hit_record.material.get_texture_information().is_some() {
             get_color_from_textures(&hit_record.material.get_texture_information().unwrap(), &hit_record.texture_coordinate.unwrap())
         } else{
             hit_record.material.get_color()
@@ -188,7 +188,7 @@ impl Light for PointLight {
     fn calculate_light_intensities(&self, ray: &Ray, hit_record: &HitRecord) -> LightIntensity {
         let mut light_intensity = LightIntensity::new();
 
-        let color = if hit_record.texture_coordinate.is_some() {
+        let color = if hit_record.material.get_texture_information().is_some() {
             get_color_from_textures(&hit_record.material.get_texture_information().unwrap(), &hit_record.texture_coordinate.unwrap())
         } else{
             hit_record.material.get_color()
