@@ -1,0 +1,50 @@
+<?xml version="1.0" standalone="no" ?>
+<!DOCTYPE scene SYSTEM "scene.dtd">
+
+<scene output_file="example9.png">
+    <background_color r="0.0" g="0.0" b="0.0"/>
+
+    <!-- Camera -->
+    <camera>
+        <position x="0.0" y="0.0" z="1.0"/>
+        <lookat x="0.0" y="0.0" z="-3.0"/>
+        <up x="0.0" y="1.0" z="0.0"/>
+        <horizontal_fov angle="55"/>
+        <resolution horizontal="2048" vertical="2048"/>
+        <max_bounces n="8"/>
+    </camera>
+
+    <!-- Lights -->
+    <lights>
+        <ambient_light>
+            <color r="1.0" g="1.0" b="1.0"/>
+        </ambient_light>
+        <point_light>
+            <color r="0.7" g="0.7" b="0.7"/>
+            <position x="2.0" y="10.0" z="-2.5"/>
+        </point_light>
+        <point_light>
+            <color r="0.7" g="0.7" b="0.7"/>
+            <position x="-2.0" y="10.0" z="-2.5"/>
+        </point_light>
+    </lights>
+
+    <!-- Surfaces -->
+    <surfaces>
+
+        <!-- First Box -->
+        <mesh name="box.obj">
+            <material_solid>
+                <color r="1.0" g="1.0" b="1.0"/>
+                <phong ka="0.3" kd="0.9" ks="1.0" exponent="20"/>
+                <reflectance r="0"/>
+                <transmittance t="0"/>
+                <refraction iof="0"/>
+            </material_solid>
+            <transform>
+                <scale x="0.8" y="2.0" z="0.8"/> 
+            </transform>
+        </mesh>
+
+    </surfaces>
+</scene>

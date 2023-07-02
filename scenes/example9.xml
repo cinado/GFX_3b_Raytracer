@@ -43,8 +43,8 @@
             </material_solid>
             <transform>
                 <translate x="-6.0" y="-1.5" z="-5.0"/>
-                <rotateY theta="60"/>
-                <scale x="0.8" y="2.0" z="0.8"/>
+				<rotateY theta="60"/>
+                <scale x="0.8" y="2.0" z="0.8"/> 
             </transform>
         </mesh>
 

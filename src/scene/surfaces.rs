@@ -9,8 +9,9 @@ use crate::{
         ray::Ray,
     },
     utils::{
-        deserialization_helpers::deserialize_point,
+        deserialization_helpers::{deserialize_point, deserialize_vector},
         file_loader,
+        mat4::Mat4,
         obj_parser::OBJParser,
         vec3::{Point, Vec3},
     },
@@ -27,6 +28,9 @@ pub struct Sphere {
     #[serde(rename = "$value")]
     #[serde(deserialize_with = "deserialize_material")]
     pub material: Rc<dyn Material>,
+    #[serde(rename = "transform")]
+    #[serde(default)]
+    pub transformation_matrices: TransformationMatrices,
 }
 
 #[derive(Deserialize)]
@@ -38,11 +42,38 @@ pub struct Mesh {
     pub material: Rc<dyn Material>,
     #[serde(skip_deserializing)]
     pub obj_parser: OBJParser,
+    #[serde(rename = "transform")]
+    #[serde(default)]
+    pub transformation_matrices: TransformationMatrices,
+}
+
+pub struct TransformationMatrices {
+    pub world_to_object_matrix: Mat4,
+    pub normal_matrix: Mat4,
+}
+
+impl Default for TransformationMatrices {
+    fn default() -> Self {
+        Self {
+            world_to_object_matrix: Mat4::create(),
+            normal_matrix: Mat4::create(),
+        }
+    }
 }
 
 impl Hittable for Mesh {
     fn hit(&self, ray: &Ray, t_min: f32, t_max: f32, hit_record: &mut HitRecord) -> bool {
         const CORRECTION: f32 = 0.00001;
+        let transformed_ray = Ray::from_values(
+            &self
+                .transformation_matrices
+                .world_to_object_matrix
+                .transform_point3(&ray.origin),
+            &self
+                .transformation_matrices
+                .world_to_object_matrix
+                .transform_vec3(&ray.direction),
+        );
 
         for chunk in self.obj_parser.new_index_array.chunks_exact(3) {
             let vertex_a = self.obj_parser.sorted_vertices[chunk[0]];
@@ -60,7 +91,7 @@ impl Hittable for Mesh {
             let edge_ab = &vertex_b - &vertex_a;
             let edge_ac = &vertex_c - &vertex_a;
 
-            let p_vec = ray.direction.cross(&edge_ab);
+            let p_vec = transformed_ray.direction.cross(&edge_ab);
             let determinant = edge_ac.dot(&p_vec);
 
             // If dot product of ray direction and triangle normal is 0 then the ray and the triangle are parallel
@@ -72,7 +103,7 @@ impl Hittable for Mesh {
             // Check barycentric coordinates
 
             let inverse_determinant = 1.0 / determinant;
-            let t_vec = &ray.origin - &vertex_a;
+            let t_vec = &transformed_ray.origin - &vertex_a;
             let u = inverse_determinant * t_vec.dot(&p_vec);
 
             if u < 0.0 || u > 1.0 {
@@ -80,7 +111,7 @@ impl Hittable for Mesh {
             }
 
             let q_vec = t_vec.cross(&edge_ac);
-            let v = inverse_determinant * ray.direction.dot(&q_vec);
+            let v = inverse_determinant * transformed_ray.direction.dot(&q_vec);
 
             if v < 0.0 || u + v > 1.0 {
                 continue;
@@ -101,7 +132,13 @@ impl Hittable for Mesh {
             let texture_coordinate = &(&(&u * &texture_vertex_3) + &(&v * &texture_vertex_2))
                 + &(&(1.0 - u - v) * &texture_vertex_1);
 
-            hit_record.set_face_normal(&ray, &outward_normal);
+            hit_record.set_face_normal(
+                &transformed_ray,
+                &self
+                    .transformation_matrices
+                    .normal_matrix
+                    .transform_vec3(&outward_normal),
+            );
             hit_record.set_texture_coordinate(&texture_coordinate);
 
             return true;
@@ -113,9 +150,20 @@ impl Hittable for Mesh {
 
 impl Hittable for Sphere {
     fn hit(&self, ray: &Ray, t_min: f32, t_max: f32, hit_record: &mut HitRecord) -> bool {
-        let oc = &ray.origin - &self.position;
-        let a = ray.direction.length_squared();
-        let half_b = Vec3::dot(&oc, &ray.direction);
+        let transformed_ray = Ray::from_values(
+            &self
+                .transformation_matrices
+                .world_to_object_matrix
+                .transform_point3(&ray.origin),
+            &self
+                .transformation_matrices
+                .world_to_object_matrix
+                .transform_vec3(&ray.direction),
+        );
+
+        let oc = &transformed_ray.origin - &self.position;
+        let a = transformed_ray.direction.length_squared();
+        let half_b = Vec3::dot(&oc, &transformed_ray.direction);
         let c = oc.length_squared() - self.radius * self.radius;
         let discriminant = half_b * half_b - a * c;
         if discriminant < 0.0 {
@@ -134,13 +182,22 @@ impl Hittable for Sphere {
         hit_record.t = root;
         hit_record.point = ray.at(hit_record.t);
         let outward_normal = (&(&hit_record.point - &self.position)) / &self.radius;
-        hit_record.set_face_normal(&ray, &outward_normal);
+
+        let transformed_outward_normal = self
+            .transformation_matrices
+            .normal_matrix
+            .transform_vec3(&outward_normal);
+
+        hit_record.set_face_normal(&transformed_ray, &transformed_outward_normal);
 
         hit_record.material = self.material.clone();
 
-        let u =
-            0.5 + f32::atan2(outward_normal.x(), outward_normal.z()) / (2.0 * std::f32::consts::PI);
-        let v = 0.5 - f32::asin(outward_normal.y()) / std::f32::consts::PI;
+        let u = 0.5
+            + f32::atan2(
+                transformed_outward_normal.x(),
+                transformed_outward_normal.z(),
+            ) / (2.0 * std::f32::consts::PI);
+        let v = 0.5 - f32::asin(transformed_outward_normal.y()) / std::f32::consts::PI;
 
         hit_record.set_texture_coordinate(&Vec3::from_values(u, v, 1.0));
 
@@ -185,4 +242,136 @@ where
     }
 
     Ok(hittable_list)
+}
+
+/*#[derive(Deserialize)]
+enum TransformationEnum {
+    #[serde(rename = "@translate")]
+    Translate {
+        #[serde(deserialize_with = "deserialize_vector")]
+        translate: Vec3,
+    },
+    #[serde(rename = "@rotateY")]
+    RotateY(f32),
+    #[serde(rename = "@scale")]
+    Scale {
+        #[serde(deserialize_with = "deserialize_vector")]
+        scale: Vec3,
+    },
+}
+
+impl<'de> Deserialize<'de> for TransformationMatrices {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        #[derive(Deserialize)]
+        struct InnerTransformation {
+            #[serde(rename = "$value")]
+            transformation: Vec<TransformationEnum>,
+        }
+
+        let inner_transformation: InnerTransformation =
+            InnerTransformation::deserialize(deserializer)?;
+
+
+        for t in inner_transformation.transformation {
+            match t {
+                TransformationEnum::Translate { translate } => {
+                    transformation.translate = Some(translate);
+                }
+                TransformationEnum::RotateY(angle) => {
+                    transformation.rotate_y = Some(angle);
+                }
+                TransformationEnum::Scale { scale } => {
+                    transformation.scale = Some(scale);
+                }
+            }
+        }
+
+        Ok(TransformationMatrices::default())
+    }
+}*/
+
+/*#[derive(Deserialize)]
+enum TransformationEnum {
+    #[serde(rename = "@translate")]
+    Translate(Translate),
+    #[serde(rename = "@rotateY")]
+    RotateY(RotateY),
+    #[serde(rename = "@scale")]
+    Scale(Scale),
+}
+
+#[derive(Deserialize)]
+struct Translate {
+    #[serde(deserialize_with = "deserialize_vector")]
+    translate: Vec3,
+}
+
+#[derive(Deserialize)]
+struct RotateY {
+    #[serde(rename = "@theta")]
+    angle: f32,
+}
+
+#[derive(Deserialize)]
+struct Scale {
+    #[serde(deserialize_with = "deserialize_vector")]
+    scale: Vec3,
+}
+
+pub trait TransformOperation {}
+
+impl TransformOperation for Translate {}
+
+impl TransformOperation for RotateY {}
+
+impl TransformOperation for Scale {}*/
+
+#[derive(Deserialize)]
+pub enum TransformationEnum {
+    #[serde(rename = "translate")]
+    #[serde(deserialize_with = "deserialize_vector")]
+    Translate(Vec3),
+    #[serde(rename = "rotateY")]
+    RotateY {
+        #[serde(rename = "@theta")]
+        angle: f32,
+    },
+    #[serde(rename = "rotateX")]
+    RotateX {
+        #[serde(rename = "@theta")]
+        angle: f32,
+    },
+    #[serde(rename = "scale")]
+    #[serde(deserialize_with = "deserialize_vector")]
+    Scale(Vec3),
+}
+
+impl<'de> Deserialize<'de> for TransformationMatrices {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        #[derive(Deserialize, Default)]
+        struct InnerTransformation {
+            #[serde(rename = "$value")]
+            #[serde(default)]
+            transformation: Vec<TransformationEnum>,
+        }
+
+        let inner_transformation: InnerTransformation =
+            InnerTransformation::deserialize(deserializer)?;
+
+        let transform_operations: Vec<TransformationEnum> = inner_transformation.transformation;
+
+        let world_to_object_transform_matrix =
+            Mat4::create_world_to_object_transformation_matrix(&transform_operations);
+
+        Ok(TransformationMatrices {
+            world_to_object_matrix: world_to_object_transform_matrix,
+            normal_matrix: world_to_object_transform_matrix.transpose(),
+        })
+    }
 }

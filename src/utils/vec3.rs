@@ -191,6 +191,18 @@ impl Div<&f32> for &Vec3 {
     }
 }
 
+impl Div<&Vec3> for &f32 {
+    type Output = Vec3;
+
+    fn div(self, rhs: &Vec3) -> Self::Output {
+        Vec3::from_values(
+            *self / rhs.x(),
+            *self / rhs.y(),
+            *self / rhs.z(),
+        )
+    }
+}
+
 impl Index<usize> for Vec3 {
     type Output = f32;
 

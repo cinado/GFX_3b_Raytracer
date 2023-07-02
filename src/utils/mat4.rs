@@ -1,5 +1,7 @@
 use std::ops::{Add, Mul, Sub};
 
+use crate::scene::surfaces::TransformationEnum;
+
 use super::vec3::{Point, Vec3};
 
 #[derive(Debug, Clone, Copy)]
@@ -72,6 +74,89 @@ impl Mat4 {
             + direction.y() * self.matrix[9]
             + direction.z() * self.matrix[10];
         Vec3::from_values(x, y, z)
+    }
+
+    pub fn transpose(&self) -> Mat4 {
+        let mut result = Mat4::new();
+
+        for i in 0..4 {
+            for j in 0..4 {
+                result.matrix[i * 4 + j] = self.matrix[j * 4 + i];
+            }
+        }
+
+        result
+    }
+
+    pub fn create_scaling_matrix(scale: &Vec3) -> Mat4 {
+        let mut mat = Mat4::identity();
+        mat.matrix[0] = scale.x();
+        mat.matrix[5] = scale.y();
+        mat.matrix[10] = scale.z();
+        mat
+    }
+
+    pub fn create_rotation_matrix_x(angle: &f32) -> Mat4 {
+        let mut mat = Mat4::identity();
+        let cos_theta = angle.cos();
+        let sin_theta = angle.sin();
+
+        mat.matrix[5] = cos_theta;
+        mat.matrix[6] = -sin_theta;
+        mat.matrix[9] = sin_theta;
+        mat.matrix[10] = cos_theta;
+
+        mat
+    }
+
+    pub fn create_rotation_matrix_y(angle: &f32) -> Mat4 {
+        let mut mat = Mat4::identity();
+        let cos_theta = angle.cos();
+        let sin_theta = angle.sin();
+
+        mat.matrix[0] = cos_theta;
+        mat.matrix[2] = sin_theta;
+        mat.matrix[8] = -sin_theta;
+        mat.matrix[10] = cos_theta;
+
+        mat
+    }
+
+    pub fn create_translation_matrix(translation: &Vec3) -> Mat4 {
+        let mut mat = Mat4::identity();
+        mat.matrix[3] = translation.x();
+        mat.matrix[7] = translation.y();
+        mat.matrix[11] = translation.z();
+        mat
+    }
+
+    pub fn create_world_to_object_transformation_matrix(
+        transform_operations: &Vec<TransformationEnum>,
+    ) -> Mat4 {
+        let mut final_matrix = Mat4::identity();
+
+        for operation in transform_operations.iter().rev() {
+            match operation {
+                TransformationEnum::Scale(scale) => {
+                    let scale_matrix = Mat4::create_scaling_matrix(&(&1.0/scale));
+                    final_matrix = &final_matrix * &scale_matrix;
+                }
+                TransformationEnum::Translate(translation_vector) => {
+                    let translation_matrix = Mat4::create_translation_matrix(&-translation_vector);
+                    final_matrix = &final_matrix * &translation_matrix;
+                }
+                TransformationEnum::RotateX { angle } => {
+                    let rotation_matrix = Mat4::create_rotation_matrix_x(&-angle.to_radians());
+                    final_matrix = &final_matrix * &rotation_matrix;
+                }
+                TransformationEnum::RotateY { angle } => {
+                    let rotation_matrix = Mat4::create_rotation_matrix_y(&-angle.to_radians());
+                    final_matrix = &final_matrix * &rotation_matrix;
+                }
+            }
+        }
+
+        final_matrix
     }
 }
 
