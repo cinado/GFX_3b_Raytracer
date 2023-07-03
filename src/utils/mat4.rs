@@ -158,6 +158,34 @@ impl Mat4 {
 
         final_matrix
     }
+
+    pub fn create_normal_matrix_of_object_to_world_space(
+        transform_operations: &Vec<TransformationEnum>,
+    ) -> Mat4 {
+        let mut final_matrix = Mat4::identity();
+
+        for operation in transform_operations {
+            match operation {
+                TransformationEnum::Scale(scale) => {
+                    let scale_matrix = Mat4::create_scaling_matrix(&(&1.0/scale));
+                    final_matrix = &final_matrix * &scale_matrix;
+                }
+                TransformationEnum::Translate(_) => {
+                    continue;
+                }
+                TransformationEnum::RotateX { angle } => {
+                    let rotation_matrix = Mat4::create_rotation_matrix_x(&angle.to_radians());
+                    final_matrix = &final_matrix * &rotation_matrix;
+                }
+                TransformationEnum::RotateY { angle } => {
+                    let rotation_matrix = Mat4::create_rotation_matrix_y(&angle.to_radians());
+                    final_matrix = &final_matrix * &rotation_matrix;
+                }
+            }
+        }
+
+        final_matrix
+    }
 }
 
 impl Add<&Mat4> for &Mat4 {

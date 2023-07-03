@@ -75,6 +75,8 @@ impl Hittable for Mesh {
                 .transform_vec3(&ray.direction),
         );
 
+        let mut intersection_occured = false;
+
         for chunk in self.obj_parser.new_index_array.chunks_exact(3) {
             let vertex_a = self.obj_parser.sorted_vertices[chunk[0]];
             let vertex_b = self.obj_parser.sorted_vertices[chunk[1]];
@@ -123,6 +125,12 @@ impl Hittable for Mesh {
                 continue;
             }
 
+            if hit_record.t > 0.0 && hit_record.t < t {
+                continue;
+            }
+
+            intersection_occured = true;
+
             hit_record.t = t;
             hit_record.point = ray.at(hit_record.t);
             hit_record.material = self.material.clone();
@@ -137,14 +145,16 @@ impl Hittable for Mesh {
                 &self
                     .transformation_matrices
                     .normal_matrix
-                    .transform_vec3(&outward_normal),
+                    .transform_vec3(&outward_normal)
+                    .unit_vector(),
             );
             hit_record.set_texture_coordinate(&texture_coordinate);
 
-            return true;
+            //return true;
         }
 
-        false
+        //false
+        intersection_occured
     }
 }
 
@@ -181,12 +191,13 @@ impl Hittable for Sphere {
         }
         hit_record.t = root;
         hit_record.point = ray.at(hit_record.t);
-        let outward_normal = (&(&hit_record.point - &self.position)) / &self.radius;
+        let outward_normal = (&(&transformed_ray.at(hit_record.t) - &self.position)) / &self.radius;
 
         let transformed_outward_normal = self
             .transformation_matrices
             .normal_matrix
-            .transform_vec3(&outward_normal);
+            .transform_vec3(&outward_normal)
+            .unit_vector();
 
         hit_record.set_face_normal(&transformed_ray, &transformed_outward_normal);
 
@@ -371,7 +382,9 @@ impl<'de> Deserialize<'de> for TransformationMatrices {
 
         Ok(TransformationMatrices {
             world_to_object_matrix: world_to_object_transform_matrix,
-            normal_matrix: world_to_object_transform_matrix.transpose(),
+            normal_matrix: Mat4::create_normal_matrix_of_object_to_world_space(
+                &transform_operations,
+            ),
         })
     }
 }

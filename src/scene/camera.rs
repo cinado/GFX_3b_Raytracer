@@ -85,17 +85,26 @@ impl Camera {
     }*/
 
     pub fn construct_ray(&self, i: f64, j: f64) -> Ray {
-        let u = (i / f64::from(self.resolution_horizontal as u32 - 1)) as f32;
-        let v = (j / f64::from(self.resolution_vertical as u32 - 1)) as f32;
+        //let u = (i / f64::from(self.resolution_horizontal as u32 - 1)) as f32;
+        //let v = (j / f64::from(self.resolution_vertical as u32 - 1)) as f32;
 
-        let computed_direction = &(&self.lower_left_corner
-            + &(&(&u * &self.horizontal) + &(&(&v * &self.vertical) - &self.position)));
+        /* let computed_direction = &(&self.lower_left_corner
+        + &(&(&u * &self.horizontal) + &(&(&v * &self.vertical) - &self.position)));*/
+
+        let x_n = (i as f32 + 0.5) / self.resolution_horizontal as f32;
+        let y_n = (j as f32 + 0.5) / self.resolution_vertical as f32;
+
+        let fov_y = self.horizontal_fov * (self.resolution_vertical as f32 / self.resolution_horizontal as f32);
+
+        let x_i = (2.0 * x_n - 1.0) * self.horizontal_fov.to_radians().tan();
+        let y_i = (2.0 * y_n - 1.0) * fov_y.to_radians().tan();
+
 
         Ray::from_values(
             &self.position,
             &self
                 .transformation_matrix
-                .transform_vec3(&computed_direction),
+                .transform_vec3(&Vec3::from_values(x_i, y_i, -1.0)),
         )
     }
 }
