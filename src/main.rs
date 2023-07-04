@@ -2,7 +2,7 @@ mod scene;
 mod tracer;
 mod utils;
 
-use std::f32::INFINITY;
+use std::{env, f32::INFINITY};
 
 use indicatif::{ProgressBar, ProgressStyle};
 use scene::scene::Scene;
@@ -14,6 +14,9 @@ use utils::{
     color_utility, file_loader, png_creator,
     vec3::{Color, Vec3},
 };
+
+use rand::distributions::Distribution;
+use rand::distributions::Uniform;
 
 fn ray_color(ray: &Ray, scene: &Scene, current_bounce_number: usize) -> Color {
     let mut hit_record = HitRecord::new();
@@ -81,23 +84,34 @@ fn refract(incident: &Vec3, normal: &Vec3, hit_record: &HitRecord) -> Vec3 {
         cosine = -cosine;
         1.0 / hit_record.material.get_refraction().iof
     } else {
-        normal_normalized = -&normal_normalized; 
+        normal_normalized = -&normal_normalized;
         hit_record.material.get_refraction().iof
     };
 
     let pre_sqrt_check = 1.0 - eta.powi(2) * (1.0 - cosine.powi(2));
 
     if pre_sqrt_check < 0.0 {
-        return reflect(&incident, &normal)
+        return reflect(&incident, &normal);
     }
 
     /*(&(&eta * &(&incident_normalized + &(&normal_normalized * &cosine)))
-        - &(&normal_normalized * &f32::sqrt(pre_sqrt_check))).unit_vector()*/
+    - &(&normal_normalized * &f32::sqrt(pre_sqrt_check))).unit_vector()*/
 
-    &(&eta * &incident_normalized) + &(&(eta * cosine - f32::sqrt(pre_sqrt_check)) * &normal_normalized)
+    &(&eta * &incident_normalized)
+        + &(&(eta * cosine - f32::sqrt(pre_sqrt_check)) * &normal_normalized)
 }
 
 fn main() {
+    let mut sample_size: Option<usize> = None;
+
+    for arg in env::args() {
+        if let Some(value) = arg.strip_prefix("-s=") {
+            if let Ok(size) = value.parse::<usize>() {
+                sample_size = Some(size);
+            }
+        }
+    }
+
     let scene = file_loader::load_and_deserialize_scene();
 
     let mut image_data = vec![];
@@ -113,14 +127,37 @@ fn main() {
             .expect("Failed to create progress style for progress bar"),
     );
 
-    for j in (0..scene.camera.resolution_vertical).rev() {
-        for i in 0..scene.camera.resolution_horizontal {
-            let ray = scene.camera.construct_ray(i as f64, j as f64);
-            let color: Color = ray_color(&ray, &scene, 0);
-            color_utility::to_png_color(&color, &mut image_data);
-            progress_bar.inc(1);
+    if sample_size.is_none() {
+        for j in (0..scene.camera.resolution_vertical).rev() {
+            for i in 0..scene.camera.resolution_horizontal {
+                let ray = scene.camera.construct_ray(i as f64, j as f64);
+                let color: Color = ray_color(&ray, &scene, 0);
+                color_utility::to_png_color(&color, &mut image_data, 1.0);
+                progress_bar.inc(1);
+            }
+        }
+    } else {
+        let mut rng = rand::thread_rng();
+        let uniform_sampler = Uniform::from(-0.5..=0.5);
+
+        for j in (0..scene.camera.resolution_vertical).rev() {
+            for i in 0..scene.camera.resolution_horizontal {
+                let mut color = Color::new();
+                for _ in 0..sample_size.unwrap() {
+                    let ray = scene.camera.construct_ray(
+                        i as f64 + uniform_sampler.sample(&mut rng),
+                        j as f64 + uniform_sampler.sample(&mut rng),
+                    );
+                    color += &ray_color(&ray, &scene, 0);
+                }
+                color_utility::to_png_color(
+                    &color,
+                    &mut image_data,
+                    sample_size.unwrap() as f32,
+                );
+                progress_bar.inc(1);
+            }
         }
     }
-
     png_creator::create_png_at_path(&image_data, &scene);
 }

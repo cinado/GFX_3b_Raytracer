@@ -9,4 +9,5 @@ edition = "2021"
 indicatif = "0.17.4"
 png = "0.17.8"
 quick-xml = { version = "0.28.2", features = ["serialize"] }
+rand = "0.8.5"
 serde = {version = "1.0.163", features = ["derive"] }

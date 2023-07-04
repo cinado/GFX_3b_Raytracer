@@ -1,6 +1,4 @@
-use std::{
-    ops::{AddAssign, MulAssign},
-};
+use std::ops::{AddAssign, MulAssign};
 
 use serde::Deserialize;
 
@@ -50,13 +48,55 @@ impl MulAssign<&Phong> for LightIntensity {
     }
 }
 
-fn get_color_from_textures(texture_information: &Texture, texture_coordinate: &Vec3) -> Color {
-    let x_converted = (f32::floor(texture_coordinate.x() * texture_information.width) as isize)
-        .rem_euclid(texture_information.width as isize) as usize;
-    let y_converted = (f32::floor(texture_coordinate.y() * texture_information.height) as isize)
-        .rem_euclid(texture_information.height as isize) as usize;
+impl MulAssign<&f32> for LightIntensity {
+    fn mul_assign(&mut self, rhs: &f32) {
+        self.ambient *= &rhs;
+        self.diffuse *= &rhs;
+        self.specular *= &rhs;
+    }
+}
 
-    texture_information.texture_pixels[(texture_information.width as usize * y_converted) + x_converted]
+fn get_color_from_textures(texture_information: &Texture, texture_coordinate: &Vec3) -> Color {
+    let antialiasing_enabled = true;
+    if antialiasing_enabled {
+        let x: f32 = texture_coordinate.x();
+        let y = texture_coordinate.y();
+
+        let x_floor = f32::floor(x * texture_information.width as f32) as isize;
+        let y_floor = f32::floor(y * texture_information.height as f32) as isize;
+
+        let x_frac = x * texture_information.width as f32 - x_floor as f32;
+        let y_frac = y * texture_information.height as f32 - y_floor as f32;
+
+        let x1 = (x_floor as usize).rem_euclid(texture_information.width as usize);
+        let y1 = (y_floor as usize).rem_euclid(texture_information.height as usize);
+
+        let x2 = ((x_floor + 1) as usize).rem_euclid(texture_information.width as usize);
+        let y2 = ((y_floor + 1) as usize).rem_euclid(texture_information.height as usize);
+
+        let color00 =
+            texture_information.texture_pixels[texture_information.width as usize * y1 + x1];
+        let color10 =
+            texture_information.texture_pixels[texture_information.width as usize * y1 + x2];
+        let color01 =
+            texture_information.texture_pixels[texture_information.width as usize * y2 + x1];
+        let color11 =
+            texture_information.texture_pixels[texture_information.width as usize * y2 + x2];
+
+        let color_top = &(&color00 * &(1.0 - x_frac)) + &(&color10 * &x_frac);
+        let color_bottom = &(&color01 * &(1.0 - x_frac)) + &(&color11 * &x_frac);
+
+        &(&color_top * &(1.0 - y_frac)) + &(&color_bottom * &y_frac)
+    } else {
+        // Former implementation without anti-aliasing and interpolation
+        let x_converted = (f32::floor(texture_coordinate.x() * texture_information.width) as isize)
+            .rem_euclid(texture_information.width as isize) as usize;
+        let y_converted = (f32::floor(texture_coordinate.y() * texture_information.height) as isize)
+            .rem_euclid(texture_information.height as isize) as usize;
+
+        texture_information.texture_pixels
+            [(texture_information.width as usize * y_converted) + x_converted]
+    }
 }
 
 pub trait Light {
@@ -75,8 +115,11 @@ impl Light for AmbientLight {
         let mut light_intesity = LightIntensity::new();
 
         let color = if hit_record.material.get_texture_information().is_some() {
-            get_color_from_textures(&hit_record.material.get_texture_information().unwrap(), &hit_record.texture_coordinate.unwrap())
-        } else{
+            get_color_from_textures(
+                &hit_record.material.get_texture_information().unwrap(),
+                &hit_record.texture_coordinate.unwrap(),
+            )
+        } else {
             hit_record.material.get_color()
         };
 
@@ -134,8 +177,11 @@ impl Light for ParallelLight {
         let mut light_intensity = LightIntensity::new();
 
         let color = if hit_record.material.get_texture_information().is_some() {
-            get_color_from_textures(&hit_record.material.get_texture_information().unwrap(), &hit_record.texture_coordinate.unwrap())
-        } else{
+            get_color_from_textures(
+                &hit_record.material.get_texture_information().unwrap(),
+                &hit_record.texture_coordinate.unwrap(),
+            )
+        } else {
             hit_record.material.get_color()
         };
 
@@ -189,8 +235,11 @@ impl Light for PointLight {
         let mut light_intensity = LightIntensity::new();
 
         let color = if hit_record.material.get_texture_information().is_some() {
-            get_color_from_textures(&hit_record.material.get_texture_information().unwrap(), &hit_record.texture_coordinate.unwrap())
-        } else{
+            get_color_from_textures(
+                &hit_record.material.get_texture_information().unwrap(),
+                &hit_record.texture_coordinate.unwrap(),
+            )
+        } else {
             hit_record.material.get_color()
         };
 
@@ -232,7 +281,6 @@ impl Light for PointLight {
     }
 }
 
-#[allow(dead_code)]
 #[derive(Deserialize)]
 struct SpotLight {
     #[serde(deserialize_with = "deserialize_color")]
@@ -241,22 +289,98 @@ struct SpotLight {
     position: Point,
     #[serde(deserialize_with = "deserialize_vector")]
     direction: Vec3,
+    #[serde(rename = "falloff")]
     fall_off: FallOff,
 }
 
 impl Light for SpotLight {
-    fn calculate_light_intensities(&self, _ray: &Ray, _hit_record: &HitRecord) -> LightIntensity {
-        // Not necessary for lab3a
-        LightIntensity::new()
+    fn calculate_light_intensities(&self, ray: &Ray, hit_record: &HitRecord) -> LightIntensity {
+        let mut light_intensity = LightIntensity::new();
+
+        let color = if hit_record.material.get_texture_information().is_some() {
+            get_color_from_textures(
+                &hit_record.material.get_texture_information().unwrap(),
+                &hit_record.texture_coordinate.unwrap(),
+            )
+        } else {
+            hit_record.material.get_color()
+        };
+
+        let incident_light_direction = (-&(&self.position - &hit_record.point)).unit_vector();
+        let incident_angle = incident_light_direction
+            .dot(&self.direction.unit_vector())
+            .acos();
+
+        if incident_angle > self.fall_off.alpha2.to_radians() {
+            return light_intensity;
+        } else if incident_angle >= 0.0 && incident_angle <= self.fall_off.alpha1.to_radians() {
+            // with angle between zero and angle1, the light should be just like a point light
+
+            // Calculate Diffuse
+            let light_vector = (&self.position - &hit_record.point).unit_vector();
+            let intensity = hit_record.normal.dot(&light_vector).max(0.0);
+            let diffuse_intensity = &(&color * &self.color) * &intensity;
+
+            // Calculate Specular
+            //r = 2(n ⋅ l)n – l
+            let reflection_vector = (&(&(&2.0 * &(hit_record.normal.dot(&light_vector)))
+                * &hit_record.normal)
+                - &light_vector)
+                .unit_vector();
+
+            let eye_vector = -&ray.direction.unit_vector();
+            let specular_intensity = &(eye_vector
+                .dot(&reflection_vector)
+                .max(0.0)
+                .powf(hit_record.material.get_phong().exponent))
+                * &self.color;
+            light_intensity.diffuse = diffuse_intensity;
+            light_intensity.specular = specular_intensity;
+            return light_intensity;
+        } else {
+            let light_vector = (&self.position - &hit_record.point).unit_vector();
+            let intensity = hit_record.normal.dot(&light_vector).max(0.0);
+            let diffuse_intensity = &(&color * &self.color) * &intensity;
+
+            // Calculate Specular
+            //r = 2(n ⋅ l)n – l
+            let reflection_vector = (&(&(&2.0 * &(hit_record.normal.dot(&light_vector)))
+                * &hit_record.normal)
+                - &light_vector)
+                .unit_vector();
+
+            let eye_vector = -&ray.direction.unit_vector();
+            let specular_intensity = &(eye_vector
+                .dot(&reflection_vector)
+                .max(0.0)
+                .powf(hit_record.material.get_phong().exponent))
+                * &self.color;
+            light_intensity.diffuse = diffuse_intensity;
+            light_intensity.specular = specular_intensity;
+
+            let interpolation_factor = 1.0
+                - ((incident_angle - self.fall_off.alpha1.to_radians())
+                    / (self.fall_off.alpha2.to_radians() - self.fall_off.alpha1.to_radians()))
+                .clamp(0.0, 1.0);
+
+            light_intensity *= &interpolation_factor;
+            light_intensity
+        }
     }
 
-    fn check_if_in_shadow(&self, _hit_record: &HitRecord, _surfaces: &HittableList) -> bool {
-        // Not necessary for lab3a
-        false
+    fn check_if_in_shadow(&self, hit_record: &HitRecord, surfaces: &HittableList) -> bool {
+        let light_vector = (&self.position - &hit_record.point).unit_vector();
+        surfaces.shadow_check(
+            &Ray {
+                origin: hit_record.point,
+                direction: light_vector,
+            },
+            0.00001, // offset prevent intersection with object itself
+            f32::INFINITY,
+        )
     }
 }
 
-#[allow(dead_code)]
 #[derive(Deserialize)]
 struct FallOff {
     #[serde(rename = "@alpha1")]
@@ -294,6 +418,7 @@ enum LightEnum {
         position: Point,
         #[serde(deserialize_with = "deserialize_vector")]
         direction: Vec3,
+        #[serde(rename = "falloff")]
         fall_off: FallOff,
     },
 }
